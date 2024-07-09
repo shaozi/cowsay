@@ -17,7 +17,7 @@ pub fn build(b: *std.Build) void {
 
     // release this module as `cowsay`
     _ = b.addModule("cowsay", .{
-        .root_source_file = .{ .path = "src/cowsay.zig" },
+        .root_source_file = b.path("src/cowsay.zig"),
         .target = target,
         .optimize = optimize,
     });
