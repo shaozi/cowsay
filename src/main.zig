@@ -1,5 +1,5 @@
 const std = @import("std");
-const cowsay = @import("cowsay.zig");
+const Cowsay = @import("cowsay.zig").Cowsay;
 
 pub fn main() !void {
     // Prints to stderr (it's a shortcut based on `std.io.getStdErr()`)
@@ -24,23 +24,28 @@ pub fn main() !void {
         \\try stdout.print("{}", .{a});
         \\try bw.flush();
     ;
-    var cs = cowsay.Cowsay{ .w = stdout.any() };
-    cs.eyes = [_]u8{ '*', '*' };
-    try cs.say("{s}", .{message});
-    cs.eyes = [_]u8{ '$', '$' };
-    try cs.say("This is a number: {d}", .{100});
-    cs.eyes = [_]u8{ '^', '^' };
+    var cow = Cowsay{ .w = stdout.any() };
+    cow.eyes = [_]u8{ '*', '*' };
+    try cow.say("{s}", .{message});
+    cow.eyes = [_]u8{ '$', '$' };
+    try cow.say("This is a number: {d}", .{100});
+    cow.eyes = [_]u8{ '^', '^' };
 
-    try cs.say("something", .{});
+    try cow.say("something", .{});
     //try cs.useCowFile("bigcow");
-    cs.eyes = [_]u8{ 'e', 'e' };
-    try cs.say("Hello {s}!\n", .{"world"});
+    cow.eyes = [_]u8{ 'e', 'e' };
+    try cow.say("Hello {s}!\n", .{"world"});
 
-    cs.eyes = [_]u8{ 'z', 'z' };
-    try cs.say("Hello {s}!\n", .{"world"});
-    try cs.useCowFile("cows/cat");
-    try cs.say("Hello {s}!\n", .{"meow"});
-    try cs.useCowFile("cows/tux");
-    cs.eyes = [_]u8{ 'o', 'o' };
-    try cs.say("Hello {s}!\n", .{"Linux"});
+    cow.eyes = [_]u8{ 'z', 'z' };
+    try cow.say("Hello {s}!\n", .{"world"});
+    cow.useCowFile("cows/cat");
+    try cow.say("Hello {s}!\n", .{"meow"});
+    cow.useCowFile("cows/tux");
+    cow.eyes = [_]u8{ 'o', 'o' };
+    try cow.say("Hello {s}!\n", .{"Linux"});
+    // use default cow
+    cow.useCowFile("");
+    try cow.think("Hmm... Hello ... world ...\n", .{});
+    cow.useDefaultCow();
+    try cow.say("Hello world!", .{});
 }
