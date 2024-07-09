@@ -15,6 +15,13 @@ pub fn build(b: *std.Build) void {
     // set a preferred release mode, allowing the user to decide how to optimize.
     const optimize = b.standardOptimizeOption(.{});
 
+    // release this module as `cowsay`
+    _ = b.addModule("cowsay", .{
+        .root_source_file = .{ .path = "src/cowsay.zig" },
+        .target = target,
+        .optimize = optimize,
+    });
+
     const lib = b.addStaticLibrary(.{
         .name = "cowsay",
         // In this case the main source file is merely a path, however, in more
