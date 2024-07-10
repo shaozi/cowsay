@@ -4,18 +4,22 @@ This is a simple zig library that mimic the ascii art [**cowsay**](https://en.wi
 
 ## Install
 
-1. Use the `zig fetch` command to fetch and save the library: 
+1. Use the `zig fetch` command to fetch and save the library:
    - Fetch the latest: `zig fetch --save git+https://github.com/shaozi/cowsay`
-   - or, fetch a specific version: `zig fetch --save https://github.com/shaozi/cowsay/archive/refs/tags/v0.0.1.tar.gz`
+   - or, fetch a specific version: `zig fetch --save https://github.com/shaozi/cowsay/archive/refs/tags/v1.0.0.tar.gz`
 1. Add the module to you own `build.zig` file:
+
    - Add these lines right before the line `b.installArtifact(exe);`:
+
      ```zig
-     const cowsay = b.dependency("cowsay", .{});
-     exe.root_module.addImport("cowsay", cowsay.module("cowsay"));
+     const Cowsay = b.dependency("Cowsay", .{});
+     exe.root_module.addImport("Cowsay", Cowsay.module("Cowsay"));
      ```
+
 1. Import it in your zig file:
+
    ```zig
-   const Cowsay = @import("cowsay").Cowsay;
+   const Cowsay = @import("Cowsay");
    ```
 
 ## Usage
@@ -65,6 +69,7 @@ Output:
               ||----w |
               ||     ||
 ```
+
 > [!NOTE]
 >
 > The first two `o` in the file are eyes.
@@ -90,6 +95,7 @@ If the file read failed, it will revert back to the default cow.
 You can use `.useFile("")` or `.useDefaultCow()` to reset the cow.
 
 > [!NOTE]
+>
 > - Cow file is simple text file of the ascii image, without the `\` bubble pointer.
 > - Max length of the file is 1000 bytes.
 
