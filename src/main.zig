@@ -1,5 +1,5 @@
 const std = @import("std");
-const Cowsay = @import("cowsay.zig").Cowsay;
+const Cowsay = @import("Cowsay.zig");
 
 pub fn main() !void {
     // Prints to stderr (it's a shortcut based on `std.io.getStdErr()`)
