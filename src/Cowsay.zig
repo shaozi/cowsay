@@ -3,6 +3,14 @@ const testing = std.testing;
 
 const Self = @This();
 
+const default_cow =
+    \\^__^
+    \\(oo)\_______
+    \\(__)\       )\/\
+    \\    ||----w |
+    \\    ||     ||
+;
+
 /// writer for output. must be an AnyWriter. Use `.any()` to convert to AnyWriter before passing in.
 w: std.io.AnyWriter,
 /// the eyes. will substitute the first two `o` of the cow
@@ -14,14 +22,6 @@ max_line_length: u32 = 0,
 offset: u32 = 0,
 cow_buffer: [1000]u8 = undefined,
 cow_buffer_length: usize = 0,
-
-const default_cow =
-    \\^__^
-    \\(oo)\_______
-    \\(__)\       )\/\
-    \\    ||----w |
-    \\    ||     ||
-;
 
 /// Print the cow saying the message. format is same as `std.fmt`
 pub fn say(self: *Self, comptime fmt: []const u8, comptime args: anytype) !void {
@@ -155,6 +155,7 @@ pub fn useDefaultCow(self: *Self) void {
         self.cow_buffer[i] = c;
     }
 }
+
 
 test "test findMax" {
     const s = "";
