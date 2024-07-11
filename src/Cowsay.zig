@@ -18,10 +18,10 @@ eyes: [2]u8 = [2]u8{ 'o', 'o' },
 
 /// private variables
 thinking: bool = false,
-max_line_length: u32 = 0,
-offset: u32 = 0,
+max_line_length: usize = 0,
+offset: usize = 0,
+cow: []u8 = &.{},
 cow_buffer: [1000]u8 = undefined,
-cow_buffer_length: usize = 0,
 
 /// Print the cow saying the message. format is same as `std.fmt`
 pub fn say(self: *Self, comptime fmt: []const u8, comptime args: anytype) !void {
@@ -59,28 +59,19 @@ fn printHLine(self: *Self) !void {
 }
 
 fn printMessage(self: Self, s: []const u8) !void {
-    var line_len: u32 = 0;
-    for (s) |c| {
-        if (line_len == 0) {
-            try self.writer.writeAll("| ");
-        }
-        if (c == '\n') {
-            try self.writer.writeByteNTimes(' ', self.max_line_length - line_len);
-            try self.writer.writeAll(" |");
-            line_len = 0;
-        } else {
-            line_len += 1;
-        }
-        try self.writer.writeByte(c);
-    }
-    if (line_len != 0) {
-        try self.writer.writeByteNTimes(' ', self.max_line_length - line_len);
-        try self.writer.writeAll(" |\n");
+    var lines = std.mem.splitScalar(u8, s, '\n');
+    while (lines.next()) |line| {
+        if (line.len == 0) continue;
+        try self.writer.writeAll("| ");
+        try self.writer.writeAll(line);
+        try self.writer.writeByteNTimes(' ', self.max_line_length - line.len);
+        try self.writer.writeAll(" |");
+        try self.writer.writeByte('\n');
     }
 }
 
 fn printCow(self: *Self) !void {
-    if (self.cow_buffer_length == 0) {
+    if (self.cow.len == 0) {
         self.useDefaultCow();
     }
     try self.writer.writeByteNTimes(' ', self.offset);
@@ -93,13 +84,12 @@ fn printCow(self: *Self) !void {
 
     var line: u32 = 0;
     var eyeIndex: u8 = 0;
-    for (0..self.cow_buffer_length) |i| {
-        const c = self.cow_buffer[i];
+    for (self.cow, 0..) |c, i| {
         if (c == 'o' and eyeIndex < 2) {
             try self.writer.writeByte(self.eyes[eyeIndex]);
             eyeIndex += 1;
         } else try self.writer.writeByte(c);
-        if (c == '\n' and i != self.cow_buffer_length - 1) {
+        if (c == '\n' and i != self.cow.len - 1) {
             line += 1;
             try self.writer.writeByteNTimes(' ', self.offset);
             if (line == 1) {
@@ -111,26 +101,18 @@ fn printCow(self: *Self) !void {
             }
         }
     }
-    if (self.cow_buffer[self.cow_buffer_length - 1] != '\n') {
+    if (self.cow[self.cow.len - 1] != '\n') {
         try self.writer.writeByte('\n');
     }
 }
 
 fn findWidth(self: *Self, s: []const u8) void {
+    var lines = std.mem.splitScalar(u8, s, '\n');
     self.max_line_length = 0;
-    var count: u32 = 0;
-    for (s) |c| {
-        if (c == '\n') {
-            if (count > self.max_line_length) {
-                self.max_line_length = count;
-            }
-            count = 0;
-        } else {
-            count += 1;
+    while (lines.next()) |line| {
+        if (line.len > self.max_line_length) {
+            self.max_line_length = line.len;
         }
-    }
-    if (count > self.max_line_length) {
-        self.max_line_length = count;
     }
     self.offset = (self.max_line_length + 4) / 2;
 }
@@ -140,24 +122,22 @@ pub fn useCowFile(self: *Self, filename: []const u8) void {
     const file = std.fs.cwd().openFile(filename, .{}) catch |err| {
         // use default
         self.useDefaultCow();
-        _ = err catch {};
+        std.log.err("File \"{s}\": {s}", .{ filename, @errorName(err) });
         return;
     };
     defer file.close();
     const n_read = file.readAll(&self.cow_buffer) catch |err| {
         // use default
         self.useDefaultCow();
-        _ = err catch {};
+        std.log.err("File \"{s}\": {s}", .{ filename, @errorName(err) });
         return;
     };
-    self.cow_buffer_length = n_read;
+    self.cow = self.cow_buffer[0..n_read];
 }
 /// Use the default cow
 pub fn useDefaultCow(self: *Self) void {
-    self.cow_buffer_length = default_cow.len;
-    for (default_cow, 0..) |c, i| {
-        self.cow_buffer[i] = c;
-    }
+    self.cow = self.cow_buffer[0..default_cow.len];
+    @memcpy(self.cow, default_cow);
 }
 
 test "test findMax" {
