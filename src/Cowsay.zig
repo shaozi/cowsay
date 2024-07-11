@@ -11,11 +11,17 @@ const default_cow =
     \\    ||     ||
 ;
 
+var general_purpose_allocator = std.heap.GeneralPurposeAllocator(.{}){};
+
+
+
 /// writer for output. must be an AnyWriter. Use `.any()` to convert to AnyWriter before passing in.
 w: std.io.AnyWriter,
 /// the eyes. will substitute the first two `o` of the cow
 eyes: [2]u8 = [2]u8{ 'o', 'o' },
 
+/// allocator to use when formatting message
+allocator: std.mem.Allocator = general_purpose_allocator.allocator(),
 /// private variables
 thinking: bool = false,
 max_line_length: u32 = 0,
@@ -36,7 +42,7 @@ pub fn think(self: *Self, comptime fmt: []const u8, comptime args: anytype) !voi
 }
 
 fn print(self: *Self, comptime fmt: []const u8, comptime args: anytype) !void {
-    var buffer = std.ArrayList(u8).init(std.heap.page_allocator);
+    var buffer = std.ArrayList(u8).init(self.allocator);
     defer buffer.deinit();
     const fmtWriter = buffer.writer();
     try std.fmt.format(fmtWriter, fmt, args);
