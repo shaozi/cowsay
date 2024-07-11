@@ -20,7 +20,7 @@ eyes: [2]u8 = [2]u8{ 'o', 'o' },
 thinking: bool = false,
 max_line_length: usize = 0,
 offset: usize = 0,
-cow: []u8 = &.{},
+cow: []const u8 = &.{},
 cow_buffer: [1000]u8 = undefined,
 
 /// Print the cow saying the message. format is same as `std.fmt`
@@ -136,8 +136,7 @@ pub fn useCowFile(self: *Self, filename: []const u8) void {
 }
 /// Use the default cow
 pub fn useDefaultCow(self: *Self) void {
-    self.cow = self.cow_buffer[0..default_cow.len];
-    @memcpy(self.cow, default_cow);
+    self.cow = default_cow;
 }
 
 test "test findMax" {
