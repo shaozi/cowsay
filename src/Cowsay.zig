@@ -11,17 +11,11 @@ const default_cow =
     \\    ||     ||
 ;
 
-var general_purpose_allocator = std.heap.GeneralPurposeAllocator(.{}){};
-
-
-
 /// writer for output. must be an AnyWriter. Use `.any()` to convert to AnyWriter before passing in.
-w: std.io.AnyWriter,
+writer: std.io.AnyWriter,
 /// the eyes. will substitute the first two `o` of the cow
 eyes: [2]u8 = [2]u8{ 'o', 'o' },
 
-/// allocator to use when formatting message
-allocator: std.mem.Allocator = general_purpose_allocator.allocator(),
 /// private variables
 thinking: bool = false,
 max_line_length: u32 = 0,
@@ -42,8 +36,12 @@ pub fn think(self: *Self, comptime fmt: []const u8, comptime args: anytype) !voi
 }
 
 fn print(self: *Self, comptime fmt: []const u8, comptime args: anytype) !void {
-    var buffer = std.ArrayList(u8).init(self.allocator);
+    var arena = std.heap.ArenaAllocator.init(std.heap.page_allocator);
+    defer arena.deinit();
+    const allocator = arena.allocator();
+    var buffer = std.ArrayList(u8).init(allocator);
     defer buffer.deinit();
+
     const fmtWriter = buffer.writer();
     try std.fmt.format(fmtWriter, fmt, args);
     self.findWidth(buffer.items);
@@ -55,29 +53,29 @@ fn print(self: *Self, comptime fmt: []const u8, comptime args: anytype) !void {
 }
 
 fn printHLine(self: *Self) !void {
-    try self.w.writeByte('+');
-    try self.w.writeByteNTimes('-', self.max_line_length + 2);
-    try self.w.writeAll("+\n");
+    try self.writer.writeByte('+');
+    try self.writer.writeByteNTimes('-', self.max_line_length + 2);
+    try self.writer.writeAll("+\n");
 }
 
-fn printMessage(self: *Self, s: []const u8) !void {
+fn printMessage(self: Self, s: []const u8) !void {
     var line_len: u32 = 0;
     for (s) |c| {
         if (line_len == 0) {
-            try self.w.writeAll("| ");
+            try self.writer.writeAll("| ");
         }
         if (c == '\n') {
-            try self.w.writeByteNTimes(' ', self.max_line_length - line_len);
-            try self.w.writeAll(" |");
+            try self.writer.writeByteNTimes(' ', self.max_line_length - line_len);
+            try self.writer.writeAll(" |");
             line_len = 0;
         } else {
             line_len += 1;
         }
-        try self.w.writeByte(c);
+        try self.writer.writeByte(c);
     }
     if (line_len != 0) {
-        try self.w.writeByteNTimes(' ', self.max_line_length - line_len);
-        try self.w.writeAll(" |\n");
+        try self.writer.writeByteNTimes(' ', self.max_line_length - line_len);
+        try self.writer.writeAll(" |\n");
     }
 }
 
@@ -85,36 +83,36 @@ fn printCow(self: *Self) !void {
     if (self.cow_buffer_length == 0) {
         self.useDefaultCow();
     }
-    try self.w.writeByteNTimes(' ', self.offset);
+    try self.writer.writeByteNTimes(' ', self.offset);
     var bubblePointer: u8 = '\\';
     if (self.thinking) {
         bubblePointer = 'o';
     }
-    try self.w.writeByte(bubblePointer);
-    try self.w.writeAll("  ");
+    try self.writer.writeByte(bubblePointer);
+    try self.writer.writeAll("  ");
 
     var line: u32 = 0;
     var eyeIndex: u8 = 0;
     for (0..self.cow_buffer_length) |i| {
         const c = self.cow_buffer[i];
         if (c == 'o' and eyeIndex < 2) {
-            try self.w.writeByte(self.eyes[eyeIndex]);
+            try self.writer.writeByte(self.eyes[eyeIndex]);
             eyeIndex += 1;
-        } else try self.w.writeByte(c);
+        } else try self.writer.writeByte(c);
         if (c == '\n' and i != self.cow_buffer_length - 1) {
             line += 1;
-            try self.w.writeByteNTimes(' ', self.offset);
+            try self.writer.writeByteNTimes(' ', self.offset);
             if (line == 1) {
-                try self.w.writeByte(' ');
-                try self.w.writeByte(bubblePointer);
-                try self.w.writeByte(' ');
+                try self.writer.writeByte(' ');
+                try self.writer.writeByte(bubblePointer);
+                try self.writer.writeByte(' ');
             } else {
-                try self.w.writeAll("   ");
+                try self.writer.writeAll("   ");
             }
         }
     }
     if (self.cow_buffer[self.cow_buffer_length - 1] != '\n') {
-        try self.w.writeByte('\n');
+        try self.writer.writeByte('\n');
     }
 }
 
@@ -162,10 +160,9 @@ pub fn useDefaultCow(self: *Self) void {
     }
 }
 
-
 test "test findMax" {
     const s = "";
-    var cow = Self{ .w = undefined };
+    var cow = Self{ .writer = undefined };
     cow.findWidth(s);
     try testing.expectEqual(0, cow.max_line_length);
     const s1 = "abc";
@@ -180,7 +177,7 @@ test "test printHLine" {
     var buffer = std.ArrayList(u8).init(alloc);
     defer buffer.deinit();
     const w = buffer.writer().any();
-    var cow = Self{ .w = w };
+    var cow = Self{ .writer = w };
     cow.findWidth("");
     try cow.printHLine();
     try testing.expectEqualStrings("+--+\n", buffer.items);
@@ -195,7 +192,7 @@ test "test printContent" {
     var buffer = std.ArrayList(u8).init(alloc);
     defer buffer.deinit();
     const w = buffer.writer().any();
-    var cow = Self{ .w = w };
+    var cow = Self{ .writer = w };
     try cow.printMessage("");
     try testing.expectEqualStrings("", buffer.items);
     buffer.clearRetainingCapacity();
@@ -220,7 +217,7 @@ test "cow" {
     var buffer = std.ArrayList(u8).init(alloc);
     defer buffer.deinit();
     const w = buffer.writer().any();
-    var cow = Self{ .w = w };
+    var cow = Self{ .writer = w };
     try cow.say("Hello world!", .{});
     try testing.expectEqualStrings(
         \\+--------------+

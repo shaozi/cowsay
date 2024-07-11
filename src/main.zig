@@ -24,7 +24,7 @@ pub fn main() !void {
         \\try stdout.print("{}", .{a});
         \\try bw.flush();
     ;
-    var cow = Cowsay{ .w = stdout.any() };
+    var cow = Cowsay{ .writer = stdout.any() };
     cow.eyes = [_]u8{ '*', '*' };
     try cow.say("{s}", .{message});
     cow.eyes = [_]u8{ '$', '$' };
