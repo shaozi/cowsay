@@ -49,3 +49,8 @@ pub fn main() !void {
     cow.useDefaultCow();
     try cow.say("Hello world!", .{});
 }
+
+test {
+    std.testing.refAllDecls(@This());
+    std.testing.refAllDecls(Cowsay);
+}
