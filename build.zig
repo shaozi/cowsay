@@ -15,26 +15,14 @@ pub fn build(b: *std.Build) void {
     // set a preferred release mode, allowing the user to decide how to optimize.
     const optimize = b.standardOptimizeOption(.{});
 
+    const zg = b.dependency("zg", .{});
+
     // release this module as `Cowsay`
     _ = b.addModule("Cowsay", .{
         .root_source_file = b.path("src/Cowsay.zig"),
         .target = target,
         .optimize = optimize,
     });
-
-    const lib = b.addStaticLibrary(.{
-        .name = "Cowsay",
-        // In this case the main source file is merely a path, however, in more
-        // complicated build scripts, this could be a generated file.
-        .root_source_file = b.path("src/Cowsay.zig"),
-        .target = target,
-        .optimize = optimize,
-    });
-
-    // This declares intent for the library to be installed into the standard
-    // location when the user invokes the "install" step (the default step when
-    // running `zig build`).
-    b.installArtifact(lib);
 
     const exe = b.addExecutable(.{
         .name = "Cowsay",
@@ -47,7 +35,7 @@ pub fn build(b: *std.Build) void {
     // standard location when the user invokes the "install" step (the default
     // step when running `zig build`).
     b.installArtifact(exe);
-
+    exe.root_module.addImport("DisplayWidth", zg.module("DisplayWidth"));
     // This *creates* a Run step in the build graph, to be executed when another
     // step is evaluated that depends on it. The next line below will establish
     // such a dependency.
@@ -80,6 +68,7 @@ pub fn build(b: *std.Build) void {
     });
 
     const run_lib_unit_tests = b.addRunArtifact(lib_unit_tests);
+    lib_unit_tests.root_module.addImport("DisplayWidth", zg.module("DisplayWidth"));
 
     const exe_unit_tests = b.addTest(.{
         .root_source_file = b.path("src/main.zig"),

@@ -24,7 +24,14 @@ pub fn main() !void {
         \\try stdout.print("{}", .{a});
         \\try bw.flush();
     ;
-    var cow = Cowsay{ .w = stdout.any() };
+    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+
+    defer {
+        const deinit_status = gpa.deinit();
+        //fail test; can't try in defer as defer is executed after we return
+        if (deinit_status == .leak) @panic("TEST FAIL");
+    }
+    var cow = Cowsay{ .writer = stdout.any(), .allocator = gpa.allocator() };
     cow.eyes = [_]u8{ '*', '*' };
     try cow.say("{s}", .{message});
     cow.eyes = [_]u8{ '$', '$' };
@@ -47,5 +54,7 @@ pub fn main() !void {
     cow.useCowFile("");
     try cow.think("Hmm... Hello ... world ...\n", .{});
     cow.useDefaultCow();
-    try cow.say("Hello world!", .{});
+    try cow.say("Hello wörld! 你好！", .{});
+    cow.useCowFile("cows/cow-utf8");
+    try cow.say("Hello world! 🐷", .{});
 }
