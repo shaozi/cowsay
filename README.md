@@ -2,6 +2,10 @@
 
 This is a simple zig library that mimic the ascii art [**cowsay**](https://en.wikipedia.org/wiki/Cowsay) .
 
+## What's New
+
+[x] Support UTF-8
+
 ## Install
 
 1. Use the `zig fetch` command to fetch and save the library:
@@ -28,7 +32,14 @@ This is a simple zig library that mimic the ascii art [**cowsay**](https://en.wi
 
 ```zig
 const stdout = std.io.getStdOut().writer();
-var cow = Cowsay{ .w = stdout.any() };
+var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+
+defer {
+   const deinit_status = gpa.deinit();
+   //fail test; can't try in defer as defer is executed after we return
+   if (deinit_status == .leak) @panic("TEST FAIL");
+}
+var cow = Cowsay{ .writer = stdout.any(), .allocator=gpa.allocator() };
 try cow.say("Hello {s}", .{"world"});
 ```
 

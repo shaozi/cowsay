@@ -58,3 +58,8 @@ pub fn main() !void {
     cow.useCowFile("cows/cow-utf8");
     try cow.say("Hello world! 🐷", .{});
 }
+
+test {
+    std.testing.refAllDecls(@This());
+    std.testing.refAllDecls(Cowsay);
+}
