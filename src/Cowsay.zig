@@ -167,23 +167,13 @@ fn findWidth(self: *Self, s: []const u8, allocator: std.mem.Allocator) !std.Arra
 }
 // Use a ascii text cow file. file is relative to current working folder.
 // If file open or read error, use the default cow.
-pub fn useCowFile(self: *Self, filename: []const u8) void {
-    const file = std.fs.cwd().openFile(filename, .{}) catch |err| {
-        // use default
-        self.useDefaultCow();
-        std.log.err("Cow file \"{s}\": {s}. Use default cow.", .{ filename, @errorName(err) });
-        return;
-    };
+pub fn useCowFile(self: *Self, filename: []const u8) !void {
+    const file = try std.fs.cwd().openFile(filename, .{});
     defer file.close();
     if (self.cow.len > 0 and self.cow.ptr != default_cow) {
         self.allocator.free(self.cow);
     }
-    self.cow = file.readToEndAlloc(self.allocator, 1000) catch |err| {
-        // use default
-        self.useDefaultCow();
-        std.log.err("Cow file \"{s}\": {s}. Use default cow.", .{ filename, @errorName(err) });
-        return;
-    };
+    self.cow = try file.readToEndAlloc(self.allocator, 1000);
 }
 /// Use the default cow
 pub fn useDefaultCow(self: *Self) void {
