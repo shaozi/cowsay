@@ -31,7 +31,8 @@ pub fn main() !void {
         //fail test; can't try in defer as defer is executed after we return
         if (deinit_status == .leak) @panic("TEST FAIL");
     }
-    var cow = Cowsay{ .writer = stdout.any(), .allocator = gpa.allocator() };
+    var cow = try Cowsay.init(gpa.allocator(), stdout.any(), null);
+    defer cow.deinit();
     cow.eyes = [_]u8{ '*', '*' };
     try cow.say("{s}", .{message});
     cow.eyes = [_]u8{ '$', '$' };

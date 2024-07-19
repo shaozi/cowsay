@@ -17,15 +17,42 @@ const default_cow =
 writer: std.io.AnyWriter,
 /// allocator is used for formatting.
 allocator: std.mem.Allocator,
+
 /// the eyes. will substitute the first two `o` of the cow
 eyes: ?[2]u8 = null,
 
 /// private variables
-cow_buffer: [1000]u8 = undefined,
 thinking: bool = false,
 max_line_length: usize = 0,
 offset: usize = 0,
-cow: []const u8 = &.{},
+cow: []const u8,
+
+/// Initialize a Cowsay struct.
+pub fn init(
+    allocator: std.mem.Allocator,
+    writer: std.io.AnyWriter,
+    cow_file: ?[]const u8,
+) !Self {
+    var result: Self = .{
+        .allocator = allocator,
+        .writer = writer,
+        .cow = default_cow,
+    };
+    if (cow_file) |file| {
+        const f = try std.fs.cwd().openFile(file, .{});
+        defer f.close();
+        result.cow = try f.readToEndAlloc(allocator, 1000);
+    }
+    return result;
+}
+
+pub fn deinit(self: *Self) void {
+    // Check that internal cow slice does not point to static text addresses.
+    if (self.cow.len > 0 and self.cow.ptr != default_cow) {
+        self.allocator.free(self.cow);
+    }
+    self.* = undefined;
+}
 
 /// Print the cow saying the message. format is same as `std.fmt`
 pub fn say(self: *Self, comptime fmt: []const u8, comptime args: anytype) !void {
@@ -148,22 +175,28 @@ pub fn useCowFile(self: *Self, filename: []const u8) void {
         return;
     };
     defer file.close();
-    const n_read = file.readAll(&self.cow_buffer) catch |err| {
+    if (self.cow.len > 0 and self.cow.ptr != default_cow) {
+        self.allocator.free(self.cow);
+    }
+    self.cow = file.readToEndAlloc(self.allocator, 1000) catch |err| {
         // use default
         self.useDefaultCow();
         std.log.err("Cow file \"{s}\": {s}. Use default cow.", .{ filename, @errorName(err) });
         return;
     };
-    self.cow = self.cow_buffer[0..n_read];
 }
 /// Use the default cow
 pub fn useDefaultCow(self: *Self) void {
+    if (self.cow.len > 0 and self.cow.ptr != default_cow) {
+        self.allocator.free(self.cow);
+    }
     self.cow = default_cow;
 }
 
 test "test findWidth" {
     const s = "";
-    var cow = Self{ .writer = undefined, .allocator = testing.allocator };
+    var cow = try Self.init(testing.allocator, undefined, null);
+    defer cow.deinit();
     const widths = try cow.findWidth(s, testing.allocator);
     defer widths.deinit();
 
@@ -194,7 +227,8 @@ test "test printHLine" {
     var buffer = std.ArrayList(u8).init(alloc);
     defer buffer.deinit();
     const w = buffer.writer().any();
-    var cow = Self{ .writer = w, .allocator = alloc };
+    var cow = try Self.init(alloc, w, null);
+    defer cow.deinit();
     const widths = try cow.findWidth("", testing.allocator);
     defer widths.deinit();
 
@@ -216,7 +250,8 @@ test "test printMessage 1" {
     var buffer = std.ArrayList(u8).init(alloc);
     defer buffer.deinit();
     const w = buffer.writer().any();
-    var cow = Self{ .writer = w, .allocator = alloc };
+    var cow = try Self.init(alloc, w, null);
+    defer cow.deinit();
     const s = "";
     const widths = try cow.findWidth(s, testing.allocator);
     defer widths.deinit();
@@ -229,7 +264,8 @@ test "test printMessage 2" {
     var buffer = std.ArrayList(u8).init(alloc);
     defer buffer.deinit();
     const w = buffer.writer().any();
-    var cow = Self{ .writer = w, .allocator = alloc };
+    var cow = try Self.init(alloc, w, null);
+    defer cow.deinit();
     const s = "abc";
     const widths = try cow.findWidth(s, testing.allocator);
     defer widths.deinit();
@@ -242,7 +278,8 @@ test "test printMessage 3" {
     var buffer = std.ArrayList(u8).init(alloc);
     defer buffer.deinit();
     const w = buffer.writer().any();
-    var cow = Self{ .writer = w, .allocator = alloc };
+    var cow = try Self.init(alloc, w, null);
+    defer cow.deinit();
     const s = "abc\n1234";
     const widths = try cow.findWidth(s, testing.allocator);
     defer widths.deinit();
@@ -255,7 +292,8 @@ test "test printMessage 4" {
     var buffer = std.ArrayList(u8).init(alloc);
     defer buffer.deinit();
     const w = buffer.writer().any();
-    var cow = Self{ .writer = w, .allocator = alloc };
+    var cow = try Self.init(alloc, w, null);
+    defer cow.deinit();
     const s = "abc\n1234\n";
     const widths = try cow.findWidth(s, testing.allocator);
     defer widths.deinit();
@@ -268,7 +306,8 @@ test "cow" {
     var buffer = std.ArrayList(u8).init(alloc);
     defer buffer.deinit();
     const w = buffer.writer().any();
-    var cow = Self{ .writer = w, .allocator = alloc };
+    var cow = try Self.init(alloc, w, null);
+    defer cow.deinit();
     try cow.say("Hello world!", .{});
     try testing.expectEqualStrings(
         \\+--------------+
