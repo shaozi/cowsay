@@ -8,10 +8,16 @@ pub fn build(b: *std.Build) void {
     const zg = b.dependency("zg", .{});
 
     // release this module as `Cowsay`
-    _ = b.addModule("Cowsay", .{
-        .root_source_file = b.path("src/Cowsay.zig"),
-        .target = target,
-        .optimize = optimize,
+    _ = b.addModule("Cowsay", .{ 
+        .root_source_file = b.path("src/Cowsay.zig"), 
+        .target = target, 
+        .optimize = optimize, 
+        .imports = &.{
+            .{
+                .name = "DisplayWidth",
+                .module = zg.module("DisplayWidth"),
+            },
+        } 
     });
 
     const exe = b.addExecutable(.{
@@ -20,6 +26,7 @@ pub fn build(b: *std.Build) void {
         .target = target,
         .optimize = optimize,
     });
+    // this will make it work
     exe.root_module.addImport("DisplayWidth", zg.module("DisplayWidth"));
 
     b.installArtifact(exe);
