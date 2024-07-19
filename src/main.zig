@@ -31,7 +31,8 @@ pub fn main() !void {
         //fail test; can't try in defer as defer is executed after we return
         if (deinit_status == .leak) @panic("TEST FAIL");
     }
-    var cow = Cowsay{ .writer = stdout.any(), .allocator = gpa.allocator() };
+    var cow = try Cowsay.init(gpa.allocator(), stdout.any(), null);
+    defer cow.deinit();
     cow.eyes = [_]u8{ '*', '*' };
     try cow.say("{s}", .{message});
     cow.eyes = [_]u8{ '$', '$' };
@@ -45,17 +46,19 @@ pub fn main() !void {
 
     cow.eyes = [_]u8{ 'z', 'z' };
     try cow.say("Hello {s}!\n", .{"world"});
-    cow.useCowFile("cows/cat");
+    try cow.useCowFile("cows/cat");
     try cow.say("Hello {s}!\n", .{"meow"});
-    cow.useCowFile("cows/tux");
+    try cow.useCowFile("cows/tux");
     cow.eyes = [_]u8{ 'o', 'o' };
     try cow.say("Hello {s}!\n", .{"Linux"});
     // use default cow
-    cow.useCowFile("");
+    cow.useCowFile("") catch {
+        cow.useDefaultCow();
+    };
     try cow.think("Hmm... Hello ... world ...\n", .{});
     cow.useDefaultCow();
     try cow.say("Hello wörld! 你好！", .{});
-    cow.useCowFile("cows/cow-utf8");
+    try cow.useCowFile("cows/cow-utf8");
     try cow.say("Hello world! 🐷", .{});
 }
 
