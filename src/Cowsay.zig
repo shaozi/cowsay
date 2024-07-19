@@ -75,7 +75,7 @@ fn print(self: *Self, comptime fmt: []const u8, comptime args: anytype) !void {
     const fmt_writer = buffer.writer();
     try std.fmt.format(fmt_writer, fmt, args);
 
-    var line_width_list = try self.findWidth(buffer.items, allocator);
+    var line_width_list = try self.findWidth(buffer.items);
     defer line_width_list.deinit();
 
     try self.printHLine();
@@ -147,13 +147,13 @@ fn printCow(self: *Self) !void {
     }
 }
 
-fn findWidth(self: *Self, s: []const u8, allocator: std.mem.Allocator) !std.ArrayList(usize) {
-    const dwd = try DisplayWidth.DisplayWidthData.init(allocator);
+fn findWidth(self: *Self, s: []const u8) !std.ArrayList(usize) {
+    const dwd = try DisplayWidth.DisplayWidthData.init(self.allocator);
     defer dwd.deinit();
     self.max_line_length = 0;
     // The `DisplayWidth` structure takes a pointer to the data.
     const dw = DisplayWidth{ .data = &dwd };
-    var line_width = std.ArrayList(usize).init(allocator);
+    var line_width = std.ArrayList(usize).init(self.allocator);
     var lines = std.mem.splitScalar(u8, s, '\n');
     while (lines.next()) |line| {
         const line_len = dw.strWidth(line);
@@ -187,26 +187,26 @@ test "test findWidth" {
     const s = "";
     var cow = try Self.init(testing.allocator, undefined, null);
     defer cow.deinit();
-    const widths = try cow.findWidth(s, testing.allocator);
+    const widths = try cow.findWidth(s);
     defer widths.deinit();
 
     try testing.expectEqualSlices(usize, &[_]usize{0}, widths.items);
     try testing.expectEqual(0, cow.max_line_length);
     const s1 = "abc";
-    const widths1 = try cow.findWidth(s1, testing.allocator);
+    const widths1 = try cow.findWidth(s1);
     defer widths1.deinit();
 
     try testing.expectEqualSlices(usize, &[_]usize{3}, widths1.items);
     try testing.expectEqual(3, cow.max_line_length);
     const s2 = "abc\n1234\n123";
-    const widths2 = try cow.findWidth(s2, testing.allocator);
+    const widths2 = try cow.findWidth(s2);
     defer widths2.deinit();
 
     try testing.expectEqualSlices(usize, &[_]usize{ 3, 4, 3 }, widths2.items);
     try testing.expectEqual(4, cow.max_line_length);
     // unicode
     const s3 = "🐮";
-    const widths3 = try cow.findWidth(s3, testing.allocator);
+    const widths3 = try cow.findWidth(s3);
     defer widths3.deinit();
 
     try testing.expectEqualSlices(usize, &[_]usize{2}, widths3.items);
@@ -219,7 +219,7 @@ test "test printHLine" {
     const w = buffer.writer().any();
     var cow = try Self.init(alloc, w, null);
     defer cow.deinit();
-    const widths = try cow.findWidth("", testing.allocator);
+    const widths = try cow.findWidth("");
     defer widths.deinit();
 
     try testing.expectEqual(0, cow.max_line_length);
@@ -227,7 +227,7 @@ test "test printHLine" {
     try cow.printHLine();
     try testing.expectEqualStrings("+--+\n", buffer.items);
     buffer.clearRetainingCapacity();
-    const widths1 = try cow.findWidth("12345", testing.allocator);
+    const widths1 = try cow.findWidth("12345");
     defer widths1.deinit();
 
     try testing.expectEqualSlices(usize, &[_]usize{5}, widths1.items);
@@ -243,7 +243,7 @@ test "test printMessage 1" {
     var cow = try Self.init(alloc, w, null);
     defer cow.deinit();
     const s = "";
-    const widths = try cow.findWidth(s, testing.allocator);
+    const widths = try cow.findWidth(s);
     defer widths.deinit();
     try cow.printMessage(s, widths.items);
     try testing.expectEqualStrings("", buffer.items);
@@ -257,7 +257,7 @@ test "test printMessage 2" {
     var cow = try Self.init(alloc, w, null);
     defer cow.deinit();
     const s = "abc";
-    const widths = try cow.findWidth(s, testing.allocator);
+    const widths = try cow.findWidth(s);
     defer widths.deinit();
     try cow.printMessage(s, widths.items);
     try testing.expectEqualStrings("| abc |\n", buffer.items);
@@ -271,7 +271,7 @@ test "test printMessage 3" {
     var cow = try Self.init(alloc, w, null);
     defer cow.deinit();
     const s = "abc\n1234";
-    const widths = try cow.findWidth(s, testing.allocator);
+    const widths = try cow.findWidth(s);
     defer widths.deinit();
     try cow.printMessage(s, widths.items);
     try testing.expectEqualStrings("| abc  |\n| 1234 |\n", buffer.items);
@@ -285,7 +285,7 @@ test "test printMessage 4" {
     var cow = try Self.init(alloc, w, null);
     defer cow.deinit();
     const s = "abc\n1234\n";
-    const widths = try cow.findWidth(s, testing.allocator);
+    const widths = try cow.findWidth(s);
     defer widths.deinit();
     try cow.printMessage(s, widths.items);
     try testing.expectEqualStrings("| abc  |\n| 1234 |\n", buffer.items);
