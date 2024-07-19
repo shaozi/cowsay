@@ -69,7 +69,7 @@ fn print(self: *Self, thinking: bool, comptime fmt: []const u8, comptime args: a
     const fmt_writer = buffer.writer();
     try std.fmt.format(fmt_writer, fmt, args);
 
-    var line_widths, const max_line_width = try self.findWidth(buffer.items);
+    const line_widths, const max_line_width = try self.findWidth(buffer.items);
     defer line_widths.deinit();
 
     try self.printHLine(max_line_width);
@@ -89,7 +89,7 @@ fn printHLine(self: *Self, width: usize) !void {
 fn printMessage(
     self: *Self,
     s: []const u8,
-    line_widths: []usize,
+    line_widths: []const usize,
     max_line_width: usize,
 ) !void {
     //var pw = DisplayWidth{ .data = pdwd };
