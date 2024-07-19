@@ -183,7 +183,7 @@ pub fn useDefaultCow(self: *Self) void {
     self.cow = default_cow;
 }
 
-test "test findWidth" {
+test findWidth {
     const s = "";
     var cow = try Self.init(testing.allocator, undefined, null);
     defer cow.deinit();
@@ -212,7 +212,8 @@ test "test findWidth" {
     try testing.expectEqualSlices(usize, &[_]usize{2}, widths3.items);
     try testing.expectEqual(2, cow.max_line_length);
 }
-test "test printHLine" {
+
+test printHLine {
     const alloc = testing.allocator;
     var buffer = std.ArrayList(u8).init(alloc);
     defer buffer.deinit();
