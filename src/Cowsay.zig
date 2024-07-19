@@ -190,33 +190,45 @@ pub fn useDefaultCow(self: *Self) void {
 }
 
 test findWidth {
-    const s = "";
     var cow = try Self.init(testing.allocator, undefined, null);
     defer cow.deinit();
-    const widths, const max_width = try cow.findWidth(s);
-    defer widths.deinit();
 
-    try testing.expectEqualSlices(usize, &[_]usize{0}, widths.items);
-    try testing.expectEqual(0, max_width);
-    const s1 = "abc";
-    const widths1, const max_width1 = try cow.findWidth(s1);
-    defer widths1.deinit();
+    {
+        const s = "";
+        const widths, const max_width = try cow.findWidth(s);
+        defer widths.deinit();
 
-    try testing.expectEqualSlices(usize, &[_]usize{3}, widths1.items);
-    try testing.expectEqual(3, max_width1);
-    const s2 = "abc\n1234\n123";
-    const widths2, const max_width2 = try cow.findWidth(s2);
-    defer widths2.deinit();
+        try testing.expectEqualSlices(usize, &[_]usize{0}, widths.items);
+        try testing.expectEqual(0, max_width);
+    }
 
-    try testing.expectEqualSlices(usize, &[_]usize{ 3, 4, 3 }, widths2.items);
-    try testing.expectEqual(4, max_width2);
-    // unicode
-    const s3 = "🐮";
-    const widths3, const max_width3 = try cow.findWidth(s3);
-    defer widths3.deinit();
+    {
+        const s = "abc";
+        const widths, const max_width = try cow.findWidth(s);
+        defer widths.deinit();
 
-    try testing.expectEqualSlices(usize, &[_]usize{2}, widths3.items);
-    try testing.expectEqual(2, max_width3);
+        try testing.expectEqualSlices(usize, &[_]usize{3}, widths.items);
+        try testing.expectEqual(3, max_width);
+    }
+
+    {
+        const s = "abc\n1234\n123";
+        const widths, const max_width = try cow.findWidth(s);
+        defer widths.deinit();
+
+        try testing.expectEqualSlices(usize, &[_]usize{ 3, 4, 3 }, widths.items);
+        try testing.expectEqual(4, max_width);
+    }
+
+    {
+        // unicode
+        const s = "🐮";
+        const widths, const max_width = try cow.findWidth(s);
+        defer widths.deinit();
+
+        try testing.expectEqualSlices(usize, &[_]usize{2}, widths.items);
+        try testing.expectEqual(2, max_width);
+    }
 }
 
 test printHLine {
@@ -226,76 +238,78 @@ test printHLine {
     const w = buffer.writer().any();
     var cow = try Self.init(alloc, w, null);
     defer cow.deinit();
-    const widths, const max_width = try cow.findWidth("");
-    defer widths.deinit();
 
-    try testing.expectEqual(0, max_width);
-    try testing.expectEqualSlices(usize, &[_]usize{0}, widths.items);
-    try cow.printHLine(max_width);
-    try testing.expectEqualStrings("+--+\n", buffer.items);
-    buffer.clearRetainingCapacity();
-    const widths1, const max_width1 = try cow.findWidth("12345");
-    defer widths1.deinit();
+    {
+        defer buffer.clearRetainingCapacity();
 
-    try testing.expectEqualSlices(usize, &[_]usize{5}, widths1.items);
-    try cow.printHLine(max_width1);
-    try testing.expectEqualStrings("+-------+\n", buffer.items);
+        const widths, const max_width = try cow.findWidth("");
+        defer widths.deinit();
+
+        try testing.expectEqual(0, max_width);
+        try testing.expectEqualSlices(usize, &[_]usize{0}, widths.items);
+        try cow.printHLine(max_width);
+        try testing.expectEqualStrings("+--+\n", buffer.items);
+    }
+
+    {
+        defer buffer.clearRetainingCapacity();
+
+        const widths, const max_width = try cow.findWidth("12345");
+        defer widths.deinit();
+
+        try testing.expectEqualSlices(usize, &[_]usize{5}, widths.items);
+        try cow.printHLine(max_width);
+        try testing.expectEqualStrings("+-------+\n", buffer.items);
+    }
 }
 
-test "test printMessage 1" {
+test printMessage {
     const alloc = testing.allocator;
     var buffer = std.ArrayList(u8).init(alloc);
     defer buffer.deinit();
     const w = buffer.writer().any();
     var cow = try Self.init(alloc, w, null);
     defer cow.deinit();
-    const s = "";
-    const widths, const max_width = try cow.findWidth(s);
-    defer widths.deinit();
-    try cow.printMessage(s, widths.items, max_width);
-    try testing.expectEqualStrings("", buffer.items);
-}
 
-test "test printMessage 2" {
-    const alloc = testing.allocator;
-    var buffer = std.ArrayList(u8).init(alloc);
-    defer buffer.deinit();
-    const w = buffer.writer().any();
-    var cow = try Self.init(alloc, w, null);
-    defer cow.deinit();
-    const s = "abc";
-    const widths, const max_width = try cow.findWidth(s);
-    defer widths.deinit();
-    try cow.printMessage(s, widths.items, max_width);
-    try testing.expectEqualStrings("| abc |\n", buffer.items);
-}
+    {
+        defer buffer.clearRetainingCapacity();
 
-test "test printMessage 3" {
-    const alloc = testing.allocator;
-    var buffer = std.ArrayList(u8).init(alloc);
-    defer buffer.deinit();
-    const w = buffer.writer().any();
-    var cow = try Self.init(alloc, w, null);
-    defer cow.deinit();
-    const s = "abc\n1234";
-    const widths, const max_width = try cow.findWidth(s);
-    defer widths.deinit();
-    try cow.printMessage(s, widths.items, max_width);
-    try testing.expectEqualStrings("| abc  |\n| 1234 |\n", buffer.items);
-}
+        const s = "";
+        const widths, const max_width = try cow.findWidth(s);
+        defer widths.deinit();
+        try cow.printMessage(s, widths.items, max_width);
+        try testing.expectEqualStrings("", buffer.items);
+    }
 
-test "test printMessage 4" {
-    const alloc = testing.allocator;
-    var buffer = std.ArrayList(u8).init(alloc);
-    defer buffer.deinit();
-    const w = buffer.writer().any();
-    var cow = try Self.init(alloc, w, null);
-    defer cow.deinit();
-    const s = "abc\n1234\n";
-    const widths, const max_width = try cow.findWidth(s);
-    defer widths.deinit();
-    try cow.printMessage(s, widths.items, max_width);
-    try testing.expectEqualStrings("| abc  |\n| 1234 |\n", buffer.items);
+    {
+        defer buffer.clearRetainingCapacity();
+
+        const s = "abc";
+        const widths, const max_width = try cow.findWidth(s);
+        defer widths.deinit();
+        try cow.printMessage(s, widths.items, max_width);
+        try testing.expectEqualStrings("| abc |\n", buffer.items);
+    }
+
+    {
+        defer buffer.clearRetainingCapacity();
+
+        const s = "abc\n1234";
+        const widths, const max_width = try cow.findWidth(s);
+        defer widths.deinit();
+        try cow.printMessage(s, widths.items, max_width);
+        try testing.expectEqualStrings("| abc  |\n| 1234 |\n", buffer.items);
+    }
+
+    {
+        defer buffer.clearRetainingCapacity();
+
+        const s = "abc\n1234\n";
+        const widths, const max_width = try cow.findWidth(s);
+        defer widths.deinit();
+        try cow.printMessage(s, widths.items, max_width);
+        try testing.expectEqualStrings("| abc  |\n| 1234 |\n", buffer.items);
+    }
 }
 
 test "cow" {
@@ -305,6 +319,7 @@ test "cow" {
     const w = buffer.writer().any();
     var cow = try Self.init(alloc, w, null);
     defer cow.deinit();
+
     try cow.say("Hello world!", .{});
     try testing.expectEqualStrings(
         \\+--------------+
@@ -318,6 +333,7 @@ test "cow" {
         \\
     , buffer.items);
     buffer.clearRetainingCapacity();
+
     try cow.think("Hello world!", .{});
     try testing.expectEqualStrings(
         \\+--------------+
