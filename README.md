@@ -89,7 +89,7 @@ Output:
 ### Load an ASCII cow file
 
 ```zig
-cow.useFile("cat");
+try cow.useCowFile("cat");
 ```
 
 Output
@@ -103,8 +103,11 @@ Output
           (") (")__/
 ```
 
-If the file read failed, it will revert back to the default cow.
-You can use `.useFile("")` or `.useDefaultCow()` to reset the cow.
+and use the default cow:
+
+```zig
+cow.useDefaultCow();
+```
 
 > [!NOTE]
 >
