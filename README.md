@@ -39,7 +39,8 @@ defer {
    //fail test; can't try in defer as defer is executed after we return
    if (deinit_status == .leak) @panic("TEST FAIL");
 }
-var cow = Cowsay{ .writer = stdout.any(), .allocator=gpa.allocator() };
+var cow = Cowsay.init(gpa.allocator, stdout.any());
+defer cow.deinit();
 try cow.say("Hello {s}", .{"world"});
 ```
 
@@ -135,7 +136,8 @@ Output
 var buffer = std.ArrayList(u8).init(std.heap.page_allocator);
 defer buffer.deinit();
 const w = buffer.writer().any();
-var cow = Cowsay{ .w = w };
+var cow = Cowsay.init(allocator, w);
+default cow.deinit();
 try cow.say("Hello world!", .{});
 try stdout.print("{s}", buffer.items);
 ```
