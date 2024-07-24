@@ -10,7 +10,7 @@ This is a simple zig library that mimic the ascii art [**cowsay**](https://en.wi
 
 1. Use the `zig fetch` command to fetch and save the library:
    - Fetch the latest: `zig fetch --save git+https://github.com/shaozi/cowsay`
-   - or, fetch a specific version: `zig fetch --save https://github.com/shaozi/cowsay/archive/refs/tags/v1.0.0.tar.gz`
+   - or, fetch a specific version: `zig fetch --save https://github.com/shaozi/cowsay/archive/refs/tags/v3.0.0.tar.gz`
 1. Add the module to you own `build.zig` file:
 
    - Add these lines right before the line `b.installArtifact(exe);`:
@@ -41,7 +41,7 @@ defer {
 }
 var cow = Cowsay.init(gpa.allocator, stdout.any());
 defer cow.deinit();
-try cow.say("Hello {s}", .{"world"});
+try cow.say("Hello {s}", .{"world!"});
 ```
 
 Output:
@@ -140,7 +140,7 @@ var buffer = std.ArrayList(u8).init(std.heap.page_allocator);
 defer buffer.deinit();
 const w = buffer.writer().any();
 var cow = Cowsay.init(allocator, w);
-default cow.deinit();
+defer cow.deinit();
 try cow.say("Hello world!", .{});
 try stdout.print("{s}", buffer.items);
 ```
